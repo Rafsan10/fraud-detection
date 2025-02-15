@@ -2,12 +2,18 @@
 import React, {useState, useContext} from "react";
 import {AuthContext} from "../../context/AuthContext";
 import {useNavigate} from "react-router-dom";
+import {updateProfile, getAuth} from "firebase/auth";
+import {db} from "../../firebase";
+import {setDoc, doc} from "firebase/firestore";
 import {Box, TextField, Button, Typography, Paper} from "@mui/material";
 
 const Register = () => {
 	const {register} = useContext(AuthContext);
 	const navigate = useNavigate();
+	const auth = getAuth();
 
+	// State for name, email, and passwords
+	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,7 +22,6 @@ const Register = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
-		// Basic validation for passwords matching.
 		if (password !== confirmPassword) {
 			setError("Passwords do not match.");
 			return;
@@ -24,7 +29,23 @@ const Register = () => {
 
 		const success = await register(email, password);
 		if (success) {
-			navigate("/dashboard"); // Navigate to dashboard on successful registration
+			try {
+				// Update the user's profile with the provided name
+				await updateProfile(auth.currentUser, {displayName: name});
+
+				// Create or update the user document with the UID as the document ID
+				await setDoc(doc(db, "users", auth.currentUser.uid), {
+					uid: auth.currentUser.uid,
+					email: auth.currentUser.email,
+					displayName: name,
+					status: "active",
+					role: "user", // default role is "user"; update manually to "admin" as needed
+					createdAt: new Date().toISOString(),
+				});
+			} catch (err) {
+				console.error("Error updating profile or creating user document:", err);
+			}
+			navigate("/dashboard");
 		} else {
 			setError("Registration failed. Please try again.");
 		}
@@ -41,6 +62,15 @@ const Register = () => {
 				</Typography>
 			)}
 			<Box component="form" onSubmit={handleSubmit} noValidate>
+				<TextField
+					label="Name"
+					type="text"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					fullWidth
+					required
+					sx={{marginBottom: 2}}
+				/>
 				<TextField
 					label="Email"
 					type="email"

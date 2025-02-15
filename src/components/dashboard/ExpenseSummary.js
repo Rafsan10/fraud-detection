@@ -8,7 +8,7 @@ const ExpenseSummary = () => {
 	const {user} = useContext(AuthContext);
 	const {transactions} = useContext(TransactionContext);
 
-	// Filter transactions for the current user using user.uid and only include expenses.
+	// Filter transactions for the current user and only include expenses
 	const userTransactions = user
 		? transactions.filter((txn) => txn.userId === user.uid && txn.type === "expense")
 		: [];

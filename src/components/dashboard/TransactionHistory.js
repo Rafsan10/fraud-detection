@@ -8,7 +8,7 @@ const TransactionHistory = () => {
 	const {user} = useContext(AuthContext);
 	const {transactions} = useContext(TransactionContext);
 
-	// Use user.uid to filter transactions for the current user
+	// Use user.uid for filtering transactions
 	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.uid) : [];
 
 	return (
@@ -24,7 +24,9 @@ const TransactionHistory = () => {
 						<React.Fragment key={txn.id}>
 							<ListItem>
 								<ListItemText
-									primary={`${txn.date} - ${txn.category} (${txn.type})`}
+									primary={`${new Date(txn.date).toLocaleString()} - ${
+										txn.category
+									} (${txn.type})`}
 									secondary={`$${txn.amount} - ${txn.status}`}
 								/>
 							</ListItem>

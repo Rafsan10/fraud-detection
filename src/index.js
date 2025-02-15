@@ -12,10 +12,20 @@ import {ThemeProvider, createTheme} from "@mui/material/styles";
 const theme = createTheme({
 	palette: {
 		primary: {
-			main: "#1976d2",
+			main: "#4caf50", // Green primary color
+			contrastText: "#ffffff", // White text on primary background
 		},
 		secondary: {
-			main: "#dc004e",
+			main: "#8bc34a", // Lighter green for secondary elements
+			contrastText: "#ffffff",
+		},
+		background: {
+			default: "#e8f5e9", // Whitish background color
+			paper: "#ffffff",
+		},
+		text: {
+			primary: "#424242", // Soft dark gray for primary text (default for non-primary backgrounds)
+			secondary: "#757575",
 		},
 	},
 });

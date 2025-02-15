@@ -1,5 +1,8 @@
 // src/components/admin/AdminUserList.js
-import React, {useState, useContext} from "react";
+import React, {useState, useEffect, useContext} from "react";
+import {db} from "../../firebase";
+import {collection, getDocs, updateDoc, doc} from "firebase/firestore";
+import {TransactionContext} from "../../context/TransactionContext";
 import {
 	Table,
 	TableBody,
@@ -11,40 +14,57 @@ import {
 	Button,
 	Typography,
 } from "@mui/material";
-import dummyData from "../../assets/dummyData.json";
-import {TransactionContext} from "../../context/TransactionContext";
 import UserTransactionDetailsModal from "./UserTransactionDetailsModal";
 
 const AdminUserList = () => {
-	const [users, setUsers] = useState(dummyData.users);
-	const {transactions} = useContext(TransactionContext);
-
-	// State to manage modal visibility and selected user
+	const [users, setUsers] = useState([]);
 	const [selectedUser, setSelectedUser] = useState(null);
 	const [modalOpen, setModalOpen] = useState(false);
+	const {transactions} = useContext(TransactionContext);
 
-	const handleBanUser = (id) => {
-		setUsers(users.map((user) => (user.id === id ? {...user, status: "banned"} : user)));
+	// Fetch all user documents from the "users" collection
+	const fetchUsers = async () => {
+		try {
+			const snapshot = await getDocs(collection(db, "users"));
+			const fetchedUsers = snapshot.docs.map((doc) => ({
+				id: doc.id,
+				...doc.data(),
+			}));
+			setUsers(fetchedUsers);
+		} catch (error) {
+			console.error("Error fetching users:", error);
+		}
 	};
 
+	useEffect(() => {
+		fetchUsers();
+	}, []);
+
+	// Ban a user by updating their status in Firestore to "banned"
+	const handleBanUser = async (userId) => {
+		try {
+			const userDocRef = doc(db, "users", userId);
+			await updateDoc(userDocRef, {status: "banned"});
+			setUsers((prevUsers) =>
+				prevUsers.map((user) => (user.id === userId ? {...user, status: "banned"} : user))
+			);
+		} catch (error) {
+			console.error("Error banning user:", error);
+		}
+	};
+
+	// When "Inspect" is clicked, store the selected user and open the modal
 	const handleInspectUser = (user) => {
 		setSelectedUser(user);
 		setModalOpen(true);
 	};
 
-	// Helper functions for spending and txn count
-	const getUserSpending = (userId) => {
-		const userTxns = transactions.filter((txn) => txn.userId === userId);
-		return userTxns.reduce((sum, txn) => sum + txn.amount, 0);
-	};
+	// Filter out admin users from the list
+	const nonAdminUsers = users.filter((user) => user.role !== "admin");
 
-	const getUserTxnCount = (userId) => {
-		return transactions.filter((txn) => txn.userId === userId).length;
-	};
-
-	// Filter transactions for a given user (for the modal)
-	const getTransactionsForUser = (userId) => {
-		return transactions.filter((txn) => txn.userId === userId);
+	// Return the number of transactions for a given user
+	const getUserTxnCount = (uid) => {
+		return transactions.filter((txn) => txn.userId === uid).length;
 	};
 
 	return (
@@ -60,30 +80,26 @@ const AdminUserList = () => {
 								<TableCell>User ID</TableCell>
 								<TableCell>Name</TableCell>
 								<TableCell>Email</TableCell>
-								<TableCell>IP Address</TableCell>
 								<TableCell>Status</TableCell>
 								<TableCell>Txn Count</TableCell>
-								<TableCell>Total Spending</TableCell>
 								<TableCell>Actions</TableCell>
 							</TableRow>
 						</TableHead>
 						<TableBody>
-							{users.map((user) => (
+							{nonAdminUsers.map((user) => (
 								<TableRow key={user.id}>
 									<TableCell>{user.id}</TableCell>
-									<TableCell>{user.name}</TableCell>
+									<TableCell>{user.displayName || user.email}</TableCell>
 									<TableCell>{user.email}</TableCell>
-									<TableCell>{user.ip}</TableCell>
-									<TableCell>{user.status}</TableCell>
-									<TableCell>{getUserTxnCount(user.id)}</TableCell>
-									<TableCell>${getUserSpending(user.id)}</TableCell>
+									<TableCell>{user.status || "active"}</TableCell>
+									<TableCell>{getUserTxnCount(user.uid)}</TableCell>
 									<TableCell>
 										{user.status !== "banned" && (
 											<Button
 												variant="contained"
 												color="error"
 												onClick={() => handleBanUser(user.id)}
-												sx={{marginRight: 1}}
+												sx={{mr: 1}}
 											>
 												Ban User
 											</Button>
@@ -103,12 +119,12 @@ const AdminUserList = () => {
 				</TableContainer>
 			</Paper>
 
-			{/* Modal to display user transaction details */}
+			{/* Modal to display the selected user's transaction details */}
 			{selectedUser && (
 				<UserTransactionDetailsModal
 					open={modalOpen}
 					onClose={() => setModalOpen(false)}
-					transactions={getTransactionsForUser(selectedUser.id)}
+					transactions={transactions.filter((txn) => txn.userId === selectedUser.uid)}
 					user={selectedUser}
 				/>
 			)}

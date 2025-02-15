@@ -1,14 +1,18 @@
 // src/components/dashboard/ChartComponent.js
 import React, {useContext} from "react";
-import {ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip} from "recharts";
 import {AuthContext} from "../../context/AuthContext";
 import {TransactionContext} from "../../context/TransactionContext";
+import {ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip} from "recharts";
 import {Paper, Typography} from "@mui/material";
 
 const ChartComponent = () => {
 	const {user} = useContext(AuthContext);
 	const {transactions} = useContext(TransactionContext);
-	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.id) : [];
+
+	// Filter transactions for the current user and only include expenses
+	const userTransactions = user
+		? transactions.filter((txn) => txn.userId === user.uid && txn.type === "expense")
+		: [];
 
 	// Aggregate expenses by category
 	const data = userTransactions.reduce((acc, txn) => {

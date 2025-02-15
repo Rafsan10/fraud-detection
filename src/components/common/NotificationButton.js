@@ -9,12 +9,13 @@ import {
 	ListItemText,
 	Typography,
 	Box,
+	Button,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import {NotificationContext} from "../../context/NotificationContext";
 
 const NotificationButton = () => {
-	const {notifications, removeNotification} = useContext(NotificationContext);
+	const {notifications, markAsRead} = useContext(NotificationContext);
 	const [anchorEl, setAnchorEl] = useState(null);
 
 	const handleClick = (event) => {
@@ -25,29 +26,22 @@ const NotificationButton = () => {
 		setAnchorEl(null);
 	};
 
-	const open = Boolean(anchorEl);
-	const id = open ? "notification-popover" : undefined;
+	// Count only notifications that are unread
+	const unreadCount = notifications.filter((n) => !n.read).length;
 
 	return (
 		<Box>
 			<IconButton color="inherit" onClick={handleClick}>
-				<Badge badgeContent={notifications.length} color="secondary">
+				<Badge badgeContent={unreadCount} color="secondary">
 					<NotificationsIcon />
 				</Badge>
 			</IconButton>
 			<Popover
-				id={id}
-				open={open}
+				open={Boolean(anchorEl)}
 				anchorEl={anchorEl}
 				onClose={handleClose}
-				anchorOrigin={{
-					vertical: "bottom",
-					horizontal: "center",
-				}}
-				transformOrigin={{
-					vertical: "top",
-					horizontal: "center",
-				}}
+				anchorOrigin={{vertical: "bottom", horizontal: "center"}}
+				transformOrigin={{vertical: "top", horizontal: "center"}}
 			>
 				<Box sx={{p: 2, minWidth: 300}}>
 					<Typography variant="h6" gutterBottom>
@@ -58,16 +52,18 @@ const NotificationButton = () => {
 					) : (
 						<List>
 							{notifications.map((n) => (
-								<ListItem
-									key={n.id}
-									divider
-									button
-									onClick={() => removeNotification(n.id)}
-								>
+								<ListItem key={n.id} divider>
 									<ListItemText
 										primary={n.message}
 										secondary={n.type.toUpperCase()}
 									/>
+									<Button
+										variant="outlined"
+										size="small"
+										onClick={() => markAsRead(n.id)}
+									>
+										Mark as Read
+									</Button>
 								</ListItem>
 							))}
 						</List>

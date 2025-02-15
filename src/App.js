@@ -9,27 +9,38 @@ import Register from "./components/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
-
-// Global components
 import Navbar from "./components/common/Navbar";
-import Notifications from "./components/common/Notifications";
+import NotificationToast from "./components/common/NotificationToast"; // Import the toast component
 import DueBillsNotifier from "./components/admin/DueBillsNotifier";
+import AdminRoute from "./components/admin/AdminRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
 	return (
 		<Router>
-			{/* Navbar is displayed on every page */}
 			<Navbar />
-			{/* Global notification display (if you want a separate area for notifications) */}
-			<Notifications />
-			{/* Due bills notifier triggers bill-related notifications */}
+			<NotificationToast /> {/* Toast displays transient notifications */}
 			<DueBillsNotifier />
 			<Routes>
 				<Route path="/" element={<Home />} />
 				<Route path="/login" element={<Login />} />
 				<Route path="/register" element={<Register />} />
-				<Route path="/dashboard" element={<Dashboard />} />
-				<Route path="/admin" element={<AdminPage />} />
+				<Route
+					path="/dashboard"
+					element={
+						<ProtectedRoute>
+							<Dashboard />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/admin"
+					element={
+						<AdminRoute>
+							<AdminPage />
+						</AdminRoute>
+					}
+				/>
 				<Route path="*" element={<NotFound />} />
 			</Routes>
 		</Router>

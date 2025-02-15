@@ -22,9 +22,9 @@ const UserDashboard = () => {
 			{user ? (
 				<>
 					<Typography variant="body1" gutterBottom>
-						Welcome, {user.name}! This is your dashboard.
+						Welcome, {user.displayName ? user.displayName : user.email}! This is your
+						dashboard.
 					</Typography>
-					{/* New Net Profit vs Loss component */}
 					<NetProfitLoss />
 					<ExpenseSummary />
 					<PaymentForm />

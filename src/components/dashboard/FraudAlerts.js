@@ -8,7 +8,11 @@ import {Paper, Typography, List, ListItem, ListItemText, Divider} from "@mui/mat
 const FraudAlerts = () => {
 	const {user} = useContext(AuthContext);
 	const {transactions} = useContext(TransactionContext);
-	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.id) : [];
+
+	// Filter transactions to include only those belonging to the current user
+	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.uid) : [];
+
+	// Use checkFraud function to determine which transactions are suspicious
 	const alerts = userTransactions.filter((txn) => checkFraud(txn, user));
 
 	return (
@@ -24,8 +28,10 @@ const FraudAlerts = () => {
 						<React.Fragment key={alert.id}>
 							<ListItem>
 								<ListItemText
-									primary={`Suspicious Transaction: $${alert.amount}`}
-									secondary={`Date: ${alert.date}`}
+									primary={`$${alert.amount} on ${new Date(
+										alert.date
+									).toLocaleString()}`}
+									secondary={`Category: ${alert.category} | Status: ${alert.status}`}
 								/>
 							</ListItem>
 							{index < alerts.length - 1 && <Divider />}

@@ -6,17 +6,19 @@ export const NotificationContext = createContext();
 export const NotificationProvider = ({children}) => {
 	const [notifications, setNotifications] = useState([]);
 
+	// Add a notification with read set to false by default
 	const addNotification = (message, type = "info") => {
-		const id = Date.now() + Math.random(); // ensure a unique id
-		setNotifications((prev) => [...prev, {id, message, type}]);
+		const id = Date.now() + Math.random();
+		setNotifications((prev) => [...prev, {id, message, type, read: false}]);
 	};
 
-	const removeNotification = (id) => {
-		setNotifications((prev) => prev.filter((n) => n.id !== id));
+	// Mark a notification as read
+	const markAsRead = (id) => {
+		setNotifications((prev) => prev.map((n) => (n.id === id ? {...n, read: true} : n)));
 	};
 
 	return (
-		<NotificationContext.Provider value={{notifications, addNotification, removeNotification}}>
+		<NotificationContext.Provider value={{notifications, addNotification, markAsRead}}>
 			{children}
 		</NotificationContext.Provider>
 	);

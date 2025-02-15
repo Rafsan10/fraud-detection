@@ -1,21 +1,21 @@
 // src/components/dashboard/NetProfitLoss.js
 import React, {useContext} from "react";
-import {Paper, Typography} from "@mui/material";
+import {AuthContext} from "../../context/AuthContext";
 import {TransactionContext} from "../../context/TransactionContext";
+import {Paper, Typography} from "@mui/material";
 
 const NetProfitLoss = () => {
+	const {user} = useContext(AuthContext);
 	const {transactions} = useContext(TransactionContext);
 
-	// Calculate total income and total expenses based on transaction type.
-	const totalIncome = transactions
+	// Filter transactions for the current user
+	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.uid) : [];
+	const totalIncome = userTransactions
 		.filter((txn) => txn.type === "income")
 		.reduce((sum, txn) => sum + txn.amount, 0);
-
-	const totalExpense = transactions
+	const totalExpense = userTransactions
 		.filter((txn) => txn.type === "expense")
 		.reduce((sum, txn) => sum + txn.amount, 0);
-
-	// Net profit is income minus expense.
 	const net = totalIncome - totalExpense;
 
 	return (

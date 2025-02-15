@@ -1,30 +1,72 @@
 // src/components/dashboard/Leaderboard.js
-import React from "react";
+import React, {useState, useEffect, useContext} from "react";
+import {db} from "../../firebase";
+import {collection, getDocs} from "firebase/firestore";
+import {TransactionContext} from "../../context/TransactionContext";
 import {Paper, Typography, List, ListItem, ListItemText, Divider} from "@mui/material";
 
 const Leaderboard = () => {
-	// Dummy leaderboard data for simulation
-	const leaderboardData = [
-		{id: 1, name: "Alice", score: 95},
-		{id: 2, name: "Bob", score: 90},
-		{id: 3, name: "Charlie", score: 85},
-	];
+	const {transactions} = useContext(TransactionContext);
+	const [users, setUsers] = useState([]);
+
+	// Fetch all users from the "users" collection in Firestore
+	useEffect(() => {
+		const fetchUsers = async () => {
+			try {
+				const snapshot = await getDocs(collection(db, "users"));
+				const usersList = snapshot.docs.map((doc) => ({
+					uid: doc.data().uid || doc.id, // Ensure we have a unique uid (using doc.id if uid field is missing)
+					displayName: doc.data().displayName,
+					email: doc.data().email,
+				}));
+				setUsers(usersList);
+			} catch (error) {
+				console.error("Error fetching users for leaderboard:", error);
+			}
+		};
+
+		fetchUsers();
+	}, []);
+
+	// For each user, compute net savings based on transactions
+	const usersWithSavings = users.map((user) => {
+		// Filter transactions belonging to this user (using user.uid)
+		const userTxns = transactions.filter((txn) => txn.userId === user.uid);
+		const totalIncome = userTxns
+			.filter((txn) => txn.type === "income")
+			.reduce((sum, txn) => sum + txn.amount, 0);
+		const totalExpense = userTxns
+			.filter((txn) => txn.type === "expense")
+			.reduce((sum, txn) => sum + txn.amount, 0);
+		const netSavings = totalIncome - totalExpense;
+		return {...user, netSavings};
+	});
+
+	// Sort users by net savings (highest first)
+	const sortedUsers = [...usersWithSavings].sort((a, b) => b.netSavings - a.netSavings);
 
 	return (
 		<Paper elevation={3} sx={{padding: 2, marginY: 2}}>
 			<Typography variant="h6" gutterBottom>
-				Leaderboard (Gamification)
+				Leaderboard (Net Savings)
 			</Typography>
-			<List>
-				{leaderboardData.map((user, index) => (
-					<React.Fragment key={user.id}>
-						<ListItem>
-							<ListItemText primary={`${user.name}: ${user.score}`} />
-						</ListItem>
-						{index < leaderboardData.length - 1 && <Divider />}
-					</React.Fragment>
-				))}
-			</List>
+			{sortedUsers.length === 0 ? (
+				<Typography variant="body1">No user data available.</Typography>
+			) : (
+				<List>
+					{sortedUsers.map((user, index) => (
+						<React.Fragment key={user.uid}>
+							<ListItem>
+								<ListItemText
+									primary={user.displayName || user.email}
+									secondary={`Net Savings: $${user.netSavings}`}
+								/>
+							</ListItem>
+							{index < sortedUsers.length - 1 && <Divider />}
+						</React.Fragment>
+					))}
+				</List>
+			)}
 		</Paper>
 	);
 };
