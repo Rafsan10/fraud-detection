@@ -2,9 +2,7 @@
 import React, {useContext, useState} from "react";
 import {AuthContext} from "../../context/AuthContext";
 import {NotificationContext} from "../../context/NotificationContext";
-import {simulatePayment} from "../../utils/fakeData";
-import {checkFraud} from "../../utils/fraudDetection"; // Import from fraudDetection.js
-import {TransactionContext} from "../../context/TransactionContext";
+// Removed unused TransactionContext import
 import {
 	TextField,
 	Button,
@@ -17,10 +15,10 @@ import {
 	MenuItem,
 	Stack,
 } from "@mui/material";
+import {useNavigate} from "react-router-dom";
 
 // Helper function to generate a simulated IP address
 const generateRandomIp = () => {
-	// Generate a random number between 100 and 200 for the last octet
 	const lastOctet = Math.floor(Math.random() * 101) + 100;
 	return `192.168.1.${lastOctet}`;
 };
@@ -28,7 +26,7 @@ const generateRandomIp = () => {
 const PaymentForm = () => {
 	const {user} = useContext(AuthContext);
 	const {addNotification} = useContext(NotificationContext);
-	const {addTransaction, transactions} = useContext(TransactionContext);
+	const navigate = useNavigate();
 
 	const [amount, setAmount] = useState("");
 	const [txnType, setTxnType] = useState("expense");
@@ -57,36 +55,20 @@ const PaymentForm = () => {
 			return;
 		}
 
-		// Build the transaction object
+		// Build the preliminary transaction object
 		const transaction = {
-			id: "txn" + Date.now(), // Local id for reference; Firestore will assign its own id on write
-			userId: user.uid, // Using Firebase Auth UID for user identification
+			id: "txn" + Date.now(), // Local id for reference; Firestore will assign its own document id on write
+			userId: user.uid,
 			amount: Number(amount),
 			category: selectedCategory,
 			date: new Date().toISOString(),
 			status: "pending",
-			ip: user.ip ? user.ip : generateRandomIp(), // Use user.ip if exists, otherwise generate a random IP
+			ip: user.ip ? user.ip : generateRandomIp(),
 			type: txnType,
 		};
 
-		// Filter transactions to get the current user's history
-		const userTxns = transactions.filter((t) => t.userId === user.uid);
-
-		// Run fraud detection rules using the current transaction, the user, and their transaction history
-		if (checkFraud(transaction, user, userTxns)) {
-			addNotification("Fraudulent activity detected!", "warning");
-		} else {
-			addNotification("Payment processed successfully.", "success");
-		}
-
-		const processedTransaction = simulatePayment(transaction);
-		console.log("Processed Transaction:", processedTransaction);
-		addTransaction(processedTransaction);
-
-		// Reset form fields
-		setAmount("");
-		setTxnType("expense");
-		setSelectedCategory("General");
+		// Navigate to the PaymentPage with the preliminary transaction data
+		navigate("/payment", {state: {transaction}});
 	};
 
 	const handleAddCategory = () => {
