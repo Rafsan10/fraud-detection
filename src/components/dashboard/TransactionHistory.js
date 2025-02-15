@@ -7,7 +7,9 @@ import {Paper, List, ListItem, ListItemText, Divider, Typography} from "@mui/mat
 const TransactionHistory = () => {
 	const {user} = useContext(AuthContext);
 	const {transactions} = useContext(TransactionContext);
-	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.id) : [];
+
+	// Use user.uid to filter transactions for the current user
+	const userTransactions = user ? transactions.filter((txn) => txn.userId === user.uid) : [];
 
 	return (
 		<Paper elevation={3} sx={{padding: 2, marginY: 2}}>
@@ -22,7 +24,7 @@ const TransactionHistory = () => {
 						<React.Fragment key={txn.id}>
 							<ListItem>
 								<ListItemText
-									primary={`${txn.date} - ${txn.category}`}
+									primary={`${txn.date} - ${txn.category} (${txn.type})`}
 									secondary={`$${txn.amount} - ${txn.status}`}
 								/>
 							</ListItem>

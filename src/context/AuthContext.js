@@ -1,39 +1,66 @@
 // src/context/AuthContext.js
+import React, {createContext, useState, useEffect} from "react";
+import {
+	getAuth,
+	onAuthStateChanged,
+	signInWithEmailAndPassword,
+	createUserWithEmailAndPassword,
+	signOut,
+} from "firebase/auth";
+import {app} from "../firebase"; // Make sure firebase.js exports "app"
 
-import React, {createContext, useState} from "react";
+const auth = getAuth(app);
 
-// Create the context for authentication
 export const AuthContext = createContext();
 
 export const AuthProvider = ({children}) => {
-	// user state will hold the current logged in user
 	const [user, setUser] = useState(null);
+	const [loading, setLoading] = useState(true);
 
-	// Simulated login function using dummy data
-	const login = (email, password) => {
-		// In a real application, you'd validate credentials with an API.
-		// Here, we'll simulate with a hardcoded user for demonstration.
-		const dummyUser = {
-			id: "user1",
-			name: "Alice",
-			email: "alice@example.com",
-			password: "password123",
-			ip: "192.168.1.1",
-			role: "user",
-		};
+	// Listen for authentication state changes
+	useEffect(() => {
+		const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+			setUser(currentUser);
+			setLoading(false);
+		});
+		return unsubscribe;
+	}, []);
 
-		// Check if provided credentials match the dummy user's
-		if (email === dummyUser.email && password === dummyUser.password) {
-			setUser(dummyUser);
+	// Function to log in a user using Firebase Authentication
+	const login = async (email, password) => {
+		try {
+			await signInWithEmailAndPassword(auth, email, password);
 			return true;
+		} catch (error) {
+			console.error("Login error:", error);
+			return false;
 		}
-		return false;
 	};
 
-	// Simulated logout function
-	const logout = () => {
-		setUser(null);
+	// Function to register a new user using Firebase Authentication
+	const register = async (email, password) => {
+		try {
+			await createUserWithEmailAndPassword(auth, email, password);
+			return true;
+		} catch (error) {
+			console.error("Register error:", error);
+			return false;
+		}
 	};
 
-	return <AuthContext.Provider value={{user, login, logout}}>{children}</AuthContext.Provider>;
+	// Function to log out the current user
+	const logout = async () => {
+		try {
+			await signOut(auth);
+		} catch (error) {
+			console.error("Logout error:", error);
+		}
+	};
+
+	return (
+		<AuthContext.Provider value={{user, login, register, logout}}>
+			{/* Only render children once loading is complete */}
+			{!loading && children}
+		</AuthContext.Provider>
+	);
 };

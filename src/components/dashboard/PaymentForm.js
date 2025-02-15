@@ -3,7 +3,7 @@ import React, {useContext, useState} from "react";
 import {AuthContext} from "../../context/AuthContext";
 import {NotificationContext} from "../../context/NotificationContext";
 import {simulatePayment} from "../../utils/fakeData";
-import {checkFraud} from "../../utils/fraudDetection";
+import {checkFraud} from "../../utils/fraudDetection"; // Corrected import
 import {TransactionContext} from "../../context/TransactionContext";
 import {
 	TextField,
@@ -24,9 +24,7 @@ const PaymentForm = () => {
 	const {addTransaction} = useContext(TransactionContext);
 
 	const [amount, setAmount] = useState("");
-	// State for transaction type (Expense/Income)
 	const [txnType, setTxnType] = useState("expense");
-	// State for category; initially set to a default list
 	const [categories, setCategories] = useState([
 		"Food",
 		"Utilities",
@@ -34,13 +32,11 @@ const PaymentForm = () => {
 		"Transport",
 		"General",
 	]);
-	// Selected category value (default is 'General')
 	const [selectedCategory, setSelectedCategory] = useState("General");
 
 	const handlePayment = (e) => {
 		e.preventDefault();
 
-		// Validate amount
 		if (!amount || Number(amount) <= 0) {
 			addNotification("Please enter a valid amount.", "error");
 			return;
@@ -54,22 +50,20 @@ const PaymentForm = () => {
 			return;
 		}
 
-		// Create a new transaction object including transaction type and selected category.
+		// Use user.uid and fallback for ip field.
 		const transaction = {
-			id: "txn" + Date.now(),
-			userId: user.id,
+			id: "txn" + Date.now(), // local id for reference (Firestore will assign its own document id)
+			userId: user.uid, // using Firebase Auth UID
 			amount: Number(amount),
 			category: selectedCategory,
 			date: new Date().toISOString(),
 			status: "pending",
-			ip: user.ip,
+			ip: user.ip || "unknown", // fallback if undefined
 			type: txnType,
 		};
 
-		// Simulate payment processing.
 		const processedTransaction = simulatePayment(transaction);
 
-		// Check for potential fraud.
 		if (checkFraud(processedTransaction, user)) {
 			addNotification("Fraudulent activity detected!", "warning");
 		} else {
@@ -79,21 +73,17 @@ const PaymentForm = () => {
 		console.log("Processed Transaction:", processedTransaction);
 		addTransaction(processedTransaction);
 
-		// Reset form fields.
 		setAmount("");
 		setTxnType("expense");
 		setSelectedCategory("General");
 	};
 
-	// Handler to add a new category
 	const handleAddCategory = () => {
 		const newCategory = prompt("Enter new category:");
 		if (newCategory && newCategory.trim() !== "") {
-			// Avoid duplicate categories
 			if (!categories.includes(newCategory)) {
 				setCategories([...categories, newCategory]);
 			}
-			// Set the new category as selected
 			setSelectedCategory(newCategory);
 		}
 	};
