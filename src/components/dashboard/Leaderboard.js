@@ -9,15 +9,15 @@ const Leaderboard = () => {
 	const {transactions} = useContext(TransactionContext);
 	const [users, setUsers] = useState([]);
 
-	// Fetch all users from the "users" collection in Firestore
 	useEffect(() => {
 		const fetchUsers = async () => {
 			try {
 				const snapshot = await getDocs(collection(db, "users"));
 				const usersList = snapshot.docs.map((doc) => ({
-					uid: doc.data().uid || doc.id, // Ensure we have a unique uid (using doc.id if uid field is missing)
+					uid: doc.data().uid || doc.id, // Ensure we have a unique UID
 					displayName: doc.data().displayName,
 					email: doc.data().email,
+					role: doc.data().role,
 				}));
 				setUsers(usersList);
 			} catch (error) {
@@ -28,19 +28,20 @@ const Leaderboard = () => {
 		fetchUsers();
 	}, []);
 
-	// For each user, compute net savings based on transactions
-	const usersWithSavings = users.map((user) => {
-		// Filter transactions belonging to this user (using user.uid)
-		const userTxns = transactions.filter((txn) => txn.userId === user.uid);
-		const totalIncome = userTxns
-			.filter((txn) => txn.type === "income")
-			.reduce((sum, txn) => sum + txn.amount, 0);
-		const totalExpense = userTxns
-			.filter((txn) => txn.type === "expense")
-			.reduce((sum, txn) => sum + txn.amount, 0);
-		const netSavings = totalIncome - totalExpense;
-		return {...user, netSavings};
-	});
+	// Filter out admin users and compute net savings for each remaining user
+	const usersWithSavings = users
+		.filter((user) => user.role !== "admin")
+		.map((user) => {
+			const userTxns = transactions.filter((txn) => txn.userId === user.uid);
+			const totalIncome = userTxns
+				.filter((txn) => txn.type === "income")
+				.reduce((sum, txn) => sum + txn.amount, 0);
+			const totalExpense = userTxns
+				.filter((txn) => txn.type === "expense")
+				.reduce((sum, txn) => sum + txn.amount, 0);
+			const netSavings = totalIncome - totalExpense;
+			return {...user, netSavings};
+		});
 
 	// Sort users by net savings (highest first)
 	const sortedUsers = [...usersWithSavings].sort((a, b) => b.netSavings - a.netSavings);
